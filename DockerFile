@@ -1,0 +1,16 @@
+FROM node:16-alpine AS development 
+
+RUN mkdir -p /usr/src/app
+WORKDIR /usr/src/app
+
+ARG NPM_TOKEN
+
+RUN echo //npm.pkg.github.com/:_authToken=$NPM_TOKEN >> .npmrc
+
+COPY package.json yarn.lock ./
+RUN yarn install --immutable --immutable-cache --check-cache
+
+COPY . . 
+RUN rm .npmrc
+
+RUN yarn build
