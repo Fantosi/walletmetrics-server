@@ -19,8 +19,8 @@ export class Transaction {
   @ManyToOne(() => Protocol, (protocol) => protocol.transactions)
   protocol: Protocol;
 
-  @Column({ type: "timestamp" })
-  timestamp: Date;
+  @Column()
+  timestamp: number;
 
   @Column()
   eventName: string;
