@@ -1,9 +1,12 @@
-import { Module } from '@nestjs/common';
-import { ProtocolController } from './protocol.controller';
-import { ProtocolService } from './protocol.service';
+import { Module } from "@nestjs/common";
+import { ProtocolService } from "./protocol.service";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { Transaction } from "@common/database/entities/transaction.entity";
+import { Wallet } from "@common/database/entities/wallet.entity";
+import { Protocol } from "@common/database/entities/protocol.entity";
 
 @Module({
-  controllers: [ProtocolController],
-  providers: [ProtocolService]
+  imports: [TypeOrmModule.forFeature([Transaction, Wallet, Protocol])],
+  providers: [ProtocolService],
 })
 export class ProtocolModule {}

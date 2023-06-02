@@ -6,7 +6,7 @@ import * as path from "path";
 import { ThrottlerModule } from "@nestjs/throttler";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ProtocolModule } from "./protocol/protocol.module";
-import { WalletModule } from './wallet/wallet.module';
+import { WalletModule } from "./wallet/wallet.module";
 import postgresConfig from "@common/config/postgres.config";
 
 @Module({
@@ -24,7 +24,6 @@ import postgresConfig from "@common/config/postgres.config";
     TypeOrmModule.forRoot({
       ...postgresConfig().postgres,
     }),
-    TransactionModule,
     ProtocolModule,
     WalletModule,
   ],
