@@ -8,6 +8,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import postgresConfig from "@common/config/postgres.config";
 import { EtherscanApiModule } from "./external-api/etherscan/etherscan-api.module";
 import etherscanApiConfig from "./common/config/etherscan.api.config";
+import { EtherscanApiService } from "@external-api/etherscan/etherscan-api.service";
 
 @Module({
   imports: [
@@ -27,6 +28,6 @@ import etherscanApiConfig from "./common/config/etherscan.api.config";
     EtherscanApiModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, EtherscanApiService],
 })
 export class AppModule {}
