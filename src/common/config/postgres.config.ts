@@ -1,4 +1,3 @@
-import { Asset } from "@common/database/entities/asset.entity";
 import { Protocol } from "@common/database/entities/protocol.entity";
 import { Transaction } from "@common/database/entities/transaction.entity";
 import { Wallet } from "@common/database/entities/wallet.entity";
@@ -13,7 +12,7 @@ export default () =>
       username: process.env.DB_USER,
       password: process.env.DB_PASS,
       database: process.env.DB_NAME,
-      entities: [Asset, Protocol, Transaction, Wallet],
+      entities: [Protocol, Transaction, Wallet],
       migrations: [__dirname + "/../database/migrations/*.{js,ts}"],
       logging: process.env.NODE_ENV === "local",
     },
