@@ -5,9 +5,10 @@ import { ConfigModule } from "@nestjs/config";
 import * as path from "path";
 import { ThrottlerModule } from "@nestjs/throttler";
 import { TypeOrmModule } from "@nestjs/typeorm";
-
-import postgresConfig from "@common/config/postgres.config";
+import { ProtocolModule } from "./protocol/protocol.module";
+import { WalletModule } from "./wallet/wallet.module";
 import { EtherscanApiModule } from "@external-api/etherscan/etherscan-api.module";
+import postgresConfig from "@common/config/postgres.config";
 import etherscanApiConfig from "@common/config/etherscan.api.config";
 
 @Module({
@@ -25,6 +26,8 @@ import etherscanApiConfig from "@common/config/etherscan.api.config";
     TypeOrmModule.forRoot({
       ...postgresConfig().postgres,
     }),
+    ProtocolModule,
+    WalletModule,
     EtherscanApiModule,
   ],
   controllers: [AppController],

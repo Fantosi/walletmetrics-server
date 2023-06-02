@@ -15,4 +15,7 @@ export class Wallet {
 
   @OneToMany(() => Asset, (asset) => asset.wallets)
   assets: Asset[];
+
+  @Column()
+  transactionNum: number;
 }
