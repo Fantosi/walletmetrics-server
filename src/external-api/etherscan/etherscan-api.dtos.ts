@@ -6,10 +6,10 @@ export class EtherscanApiResponse {
 export type EtherScanResponse = {
   status: string;
   message: string;
-  result: EtherScanResult[];
+  result: TransactionDto[];
 };
 
-export type EtherScanResult = {
+export class TransactionDto {
   blockNumber: string;
   timeStamp: string;
   hash: string;
@@ -28,7 +28,7 @@ export type EtherScanResult = {
   gasUsed: string;
   methodId: string;
   functionName: string;
-};
+}
 
 export type EtherScanTxListRequest = {
   address: string;

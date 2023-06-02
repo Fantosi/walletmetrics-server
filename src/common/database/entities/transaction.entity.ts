@@ -33,4 +33,7 @@ export class Transaction {
 
   @Column()
   tokenValue: number;
+
+  @Column()
+  hash: string;
 }
