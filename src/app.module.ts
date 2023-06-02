@@ -7,13 +7,15 @@ import { ThrottlerModule } from "@nestjs/throttler";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ProtocolModule } from "./protocol/protocol.module";
 import { WalletModule } from "./wallet/wallet.module";
+import { EtherscanApiModule } from "@external-api/etherscan/etherscan-api.module";
 import postgresConfig from "@common/config/postgres.config";
+import etherscanApiConfig from "@common/config/etherscan.api.config";
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [postgresConfig],
+      load: [postgresConfig, etherscanApiConfig],
       envFilePath: path.join("env", `.${process.env.NODE_ENV}.env`),
       ignoreEnvFile: !(process.env.NODE_ENV === "local"),
     }),
@@ -26,6 +28,7 @@ import postgresConfig from "@common/config/postgres.config";
     }),
     ProtocolModule,
     WalletModule,
+    EtherscanApiModule,
   ],
   controllers: [AppController],
   providers: [AppService],
