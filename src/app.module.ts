@@ -5,7 +5,8 @@ import { ConfigModule } from "@nestjs/config";
 import * as path from "path";
 import { ThrottlerModule } from "@nestjs/throttler";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { TransactionModule } from './transaction/transaction.module';
+import { ProtocolModule } from "./protocol/protocol.module";
+import { WalletModule } from './wallet/wallet.module';
 import postgresConfig from "@common/config/postgres.config";
 
 @Module({
@@ -24,6 +25,8 @@ import postgresConfig from "@common/config/postgres.config";
       ...postgresConfig().postgres,
     }),
     TransactionModule,
+    ProtocolModule,
+    WalletModule,
   ],
   controllers: [AppController],
   providers: [AppService],
