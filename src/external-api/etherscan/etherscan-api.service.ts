@@ -9,9 +9,13 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Wallet } from "@common/database/entities/wallet.entity";
 import { Protocol } from "@common/database/entities/protocol.entity";
+import { ethers } from "ethers";
 
 @Injectable()
 export class EtherscanApiService {
+  baseUrl = this.configService.get<string>("EtherscanApi.url");
+  apiKey = this.configService.get<string>("EtherscanApi.apiKey");
+
   constructor(
     private httpService: HttpService,
     private configService: ConfigService,
@@ -21,12 +25,18 @@ export class EtherscanApiService {
     private walletRepository: Repository<Wallet>,
     @InjectRepository(Protocol)
     private protocolRepository: Repository<Protocol>,
-  ) {}
+  ) {
+    const check = async () => {
+      // const isSynced = await this.syncTransactions("0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D");
+      // console.log("isSynced", isSynced);
+    };
+    check();
+  }
 
   async getTxList() {
     const result: TransactionDto[] = [];
-    const baseUrl = this.configService.get<string>("EtherscanApi.url");
-    const apiKey = this.configService.get<string>("EtherscanApi.apiKey");
+    // const baseUrl = this.configService.get<string>("EtherscanApi.url");
+    // const apiKey = this.configService.get<string>("EtherscanApi.apiKey");
 
     const request: EtherScanTxListRequest = {
       address: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
@@ -35,10 +45,10 @@ export class EtherscanApiService {
       page: "1",
       offset: "10",
       sort: "desc",
-      apikey: apiKey,
+      apikey: this.apiKey,
     };
 
-    const url = `${baseUrl}&address=${request.address}&startblock=${request.startblock}&endblock=${request.endblock}&page=${request.page}&offset=${request.offset}&sort=${request.sort}&apikey=${request.apikey}`;
+    const url = `${this.baseUrl}&address=${request.address}&startblock=${request.startblock}&endblock=${request.endblock}&page=${request.page}&offset=${request.offset}&sort=${request.sort}&apikey=${request.apikey}`;
 
     const { data } = await firstValueFrom(this.httpService.get<EtherScanResponse>(url).pipe());
 
@@ -55,8 +65,8 @@ export class EtherscanApiService {
     return result;
   }
 
-  async createTransaction(transactionDto: TransactionDto): Promise<Boolean> {
-    const { from: walletAddress, to: protocolAddress, timeStamp, value, hash } = transactionDto;
+  async createTransaction(transactionDto: TransactionDto): Promise<boolean> {
+    const { from: walletAddress, to: protocolAddress, timeStamp, value, hash, blockNumber } = transactionDto;
     try {
       console.log("createTransaction", JSON.stringify(transactionDto));
       let wallet = await this.walletRepository.findOne({ where: { walletAddress } });
@@ -96,11 +106,10 @@ export class EtherscanApiService {
           totalValue: 0,
           coinValue: 0,
           tokenValue: 0,
+          blockNumber: Number(blockNumber),
         });
       }
 
-      // wallet.transactionNum++;
-      // await this.walletRepository.save(wallet);
       return true;
     } catch (error) {
       console.error(error);
@@ -113,6 +122,116 @@ export class EtherscanApiService {
       await this.transactionRepository.delete({});
       await this.walletRepository.delete({});
       await this.protocolRepository.delete({});
+      return true;
+    } catch (error) {
+      console.error(error);
+      return false;
+    }
+  }
+
+  async checkIsSyncedByBlockNumber(protocolAddress: string): Promise<boolean> {
+    try {
+      const protocol = await this.protocolRepository.findOne({ where: { protocolAddress } });
+
+      if (protocol == null) {
+        return false;
+      }
+
+      const transactions = await this.transactionRepository.find({
+        where: { protocolId: protocol.id },
+        order: { blockNumber: "DESC" },
+      });
+      if (transactions == null || transactions.length === 0) {
+        return false;
+      }
+
+      const savedLastBlockNumber = transactions[0].blockNumber;
+      const lastBlockNumber = await this.getLastBlockNumberFromEtherscan(
+        protocolAddress,
+        savedLastBlockNumber.toString(),
+      );
+
+      if (lastBlockNumber == 0) {
+        return false;
+      }
+
+      if (lastBlockNumber != savedLastBlockNumber) {
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error(error);
+      return false;
+    }
+  }
+
+  async getLastBlockNumberFromEtherscan(protocolAddress: string, savedBlockNumber: string): Promise<number> {
+    const request: EtherScanTxListRequest = {
+      address: protocolAddress,
+      startblock: savedBlockNumber,
+      endblock: "99999999",
+      page: "1",
+      offset: "1",
+      sort: "desc",
+      apikey: this.apiKey,
+    };
+
+    const url = `${this.baseUrl}&address=${request.address}&startblock=${request.startblock}&endblock=${request.endblock}&page=${request.page}&offset=${request.offset}&sort=${request.sort}&apikey=${request.apikey}`;
+
+    const { data } = await firstValueFrom(this.httpService.get<EtherScanResponse>(url).pipe());
+
+    if (data.status === "1") {
+      return Number(data.result[0].blockNumber);
+    }
+    return 0;
+  }
+
+  async syncTransactions(protocolAddress: string): Promise<boolean> {
+    try {
+      const lowerCasedProtocolAddress = protocolAddress.toLowerCase();
+      const isSynced = await this.checkIsSyncedByBlockNumber(lowerCasedProtocolAddress);
+      if (isSynced) {
+        return true;
+      }
+
+      const protocol = await this.protocolRepository.findOne({ where: { protocolAddress: lowerCasedProtocolAddress } });
+      const protocolId = protocol.id;
+      const transactions = await this.transactionRepository.find({
+        where: { protocolId },
+        order: { blockNumber: "DESC" },
+      });
+      const savedLastBlockNumber = transactions[0].blockNumber + 1;
+
+      let page = 1;
+      while (true) {
+        const request: EtherScanTxListRequest = {
+          address: lowerCasedProtocolAddress,
+          startblock: savedLastBlockNumber.toString(),
+          endblock: "99999999",
+          page: page.toString(),
+          offset: "500",
+          sort: "desc",
+          apikey: this.apiKey,
+        };
+
+        const url = `${this.baseUrl}&address=${request.address}&startblock=${request.startblock}&endblock=${request.endblock}&page=${request.page}&offset=${request.offset}&sort=${request.sort}&apikey=${request.apikey}`;
+
+        const { data } = await firstValueFrom(this.httpService.get<EtherScanResponse>(url).pipe());
+
+        if (data.status === "1") {
+          for (const tx of data.result) {
+            await this.createTransaction(tx);
+          }
+        }
+
+        if (data.result.length < 500) {
+          break;
+        }
+
+        page++;
+      }
+
       return true;
     } catch (error) {
       console.error(error);

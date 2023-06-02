@@ -36,4 +36,7 @@ export class Transaction {
 
   @Column()
   hash: string;
+
+  @Column()
+  blockNumber: number;
 }
