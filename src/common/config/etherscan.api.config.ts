@@ -9,4 +9,8 @@ export default () =>
       url: process.env.ETHERSCAN_API_URL,
       apiKey: process.env.ETHERSCAN_API_KEY,
     },
+    GnosisscanApi: {
+      url: process.env.GNOSISSCAN_API_URL,
+      apiKey: process.env.GNOSISSCAN_API_KEY,
+    },
   } as { EtherscanApi: EtherscanApiConfig });
