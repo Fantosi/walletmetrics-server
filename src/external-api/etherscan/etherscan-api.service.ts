@@ -146,7 +146,9 @@ export class EtherscanApiService {
       }
 
       const savedLastBlockNumber = transactions[0].blockNumber;
+
       const lastBlockNumber = await this._getLastBlockNumberFromEtherscan(
+
         protocolAddress,
         savedLastBlockNumber.toString(),
       );
@@ -167,6 +169,7 @@ export class EtherscanApiService {
   }
 
   private async _getLastBlockNumberFromEtherscan(protocolAddress: string, savedBlockNumber: string): Promise<number> {
+
     const request: EtherScanTxListRequest = {
       address: protocolAddress,
       startblock: savedBlockNumber,
