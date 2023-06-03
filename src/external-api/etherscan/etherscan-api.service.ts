@@ -28,6 +28,7 @@ export class EtherscanApiService {
     const check = async () => {
       // const isSynced = await this.syncTransactions("0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D");
       // console.log("isSynced", isSynced);
+      // await this.deleteTables();
     };
     check();
   }
@@ -148,44 +149,51 @@ export class EtherscanApiService {
         return true;
       }
 
-      const protocol = await this.protocolRepository.findOne({ where: { protocolAddress: lowerCasedProtocolAddress } });
+      // protocol에서 tx 가져와서 오고 startblock 바꿔주면서 while loop 돌리기
 
-      let savedLastBlockNumber: number;
-      if (protocol !== null) {
-        const protocolId = protocol.id;
-        const transactions = await this.transactionRepository.find({
-          where: { protocolId },
-          order: { blockNumber: "DESC" },
+      while (true) {
+        const protocol = await this.protocolRepository.findOne({
+          where: { protocolAddress: lowerCasedProtocolAddress },
         });
-        savedLastBlockNumber = transactions[0].blockNumber + 1;
-      } else {
-        /* TODO: etherscan API에서 protocolAddress로 콜을 날려서 startBlock을 가져오도록 수정 */
-        savedLastBlockNumber = 0;
-      }
-
-      const request: EtherScanTxListRequest = {
-        address: lowerCasedProtocolAddress,
-        startblock: savedLastBlockNumber.toString(),
-        endblock: "99999999",
-        page: "1",
-        offset: "10000",
-        sort: "desc",
-        apikey: this.apiKey,
-      };
-
-      const url = `${this.baseUrl}&address=${request.address}&startblock=${request.startblock}&endblock=${request.endblock}&page=${request.page}&offset=${request.offset}&sort=${request.sort}&apikey=${request.apikey}`;
-
-      const { data } = await firstValueFrom(this.httpService.get<EtherScanResponse>(url).pipe());
-
-      if (data.status === "1") {
-        for (const tx of data.result) {
-          await this._createTransaction(tx);
+        let savedLastBlockNumber: number;
+        if (protocol !== null) {
+          const protocolId = protocol.id;
+          const transactions = await this.transactionRepository.find({
+            where: { protocolId },
+            order: { blockNumber: "DESC" },
+          });
+          savedLastBlockNumber = transactions[0].blockNumber;
+        } else {
+          /* TODO: etherscan API에서 protocolAddress로 콜을 날려서 startBlock을 가져오도록 수정 */
+          savedLastBlockNumber = 0;
         }
-      } else {
-        throw Error(`Etherscan API Error: status code: ${data.status}`);
-      }
 
-      return true;
+        const request: EtherScanTxListRequest = {
+          address: lowerCasedProtocolAddress,
+          startblock: savedLastBlockNumber.toString(),
+          endblock: "99999999",
+          page: "1",
+          offset: "1000",
+          sort: "asc",
+          apikey: this.apiKey,
+        };
+
+        const url = `${this.baseUrl}&address=${request.address}&startblock=${request.startblock}&endblock=${request.endblock}&page=${request.page}&offset=${request.offset}&sort=${request.sort}&apikey=${request.apikey}`;
+
+        const { data } = await firstValueFrom(this.httpService.get<EtherScanResponse>(url).pipe());
+
+        if (data.status === "1") {
+          for (const tx of data.result) {
+            await this._createTransaction(tx);
+          }
+
+          if (data.result.length < 1000) {
+            break;
+          }
+        } else {
+          throw Error(`Etherscan API Error: status code: ${data.status}`);
+        }
+      }
     } catch (error) {
       console.error(error);
       return false;
