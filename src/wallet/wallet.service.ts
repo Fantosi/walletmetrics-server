@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { LessThan, Repository } from "typeorm";
 import { Wallet } from "../common/database/entities/wallet.entity";
-import { Transaction } from "@common/database/entities/transaction.entity";
+import { Transaction } from "../common/database/entities/transaction.entity";
 import { WalletsByTimestampInterval } from "./wallet.dtos";
 
 @Injectable()

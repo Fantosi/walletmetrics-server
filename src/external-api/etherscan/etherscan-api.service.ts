@@ -4,11 +4,11 @@ import { HttpService } from "@nestjs/axios";
 import { ConfigService } from "@nestjs/config";
 import { catchError, firstValueFrom } from "rxjs";
 import { AxiosError } from "axios";
-import { Transaction } from "@common/database/entities/transaction.entity";
+import { Transaction } from "../../common/database/entities/transaction.entity";
+import { Wallet } from "../../common/database/entities/wallet.entity";
+import { Protocol } from "../../common/database/entities/protocol.entity";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-import { Wallet } from "@common/database/entities/wallet.entity";
-import { Protocol } from "@common/database/entities/protocol.entity";
 import { ethers } from "ethers";
 
 @Injectable()
@@ -146,7 +146,7 @@ export class EtherscanApiService {
       }
 
       const savedLastBlockNumber = transactions[0].blockNumber;
-      const lastBlockNumber = await this.getLastBlockNumberFromEtherscan(
+      const lastBlockNumber = await this._getLastBlockNumberFromEtherscan(
         protocolAddress,
         savedLastBlockNumber.toString(),
       );
@@ -166,7 +166,7 @@ export class EtherscanApiService {
     }
   }
 
-  async getLastBlockNumberFromEtherscan(protocolAddress: string, savedBlockNumber: string): Promise<number> {
+  private async _getLastBlockNumberFromEtherscan(protocolAddress: string, savedBlockNumber: string): Promise<number> {
     const request: EtherScanTxListRequest = {
       address: protocolAddress,
       startblock: savedBlockNumber,
