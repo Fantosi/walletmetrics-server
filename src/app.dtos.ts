@@ -16,9 +16,11 @@ export class GetBriefRes {
     week: number;
     month: number;
   };
-  newDatasDayChart: NewDataChartElement[];
-  newDatasWeekChart: NewDataChartElement[];
-  newDatasMonthChart: NewDataChartElement[];
+  newDatasChart: {
+    newDatasDayChart: NewDataChartElement[];
+    newDatasWeekChart: NewDataChartElement[];
+    newDatasMonthChart: NewDataChartElement[];
+  };
   newDatasList: NewData[]; // currenty 20 (tmp)
   totalDatasNum: number;
   activatedDailyDatasNum: number;
