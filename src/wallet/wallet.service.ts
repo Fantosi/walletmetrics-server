@@ -17,7 +17,6 @@ export class WalletService {
     const response: ChartElement[] = [];
 
     /* timestamp: genensis block */
-    // let currentStartTimestamp = startTimestamp ? startTimestamp : 1438269973;
     let currentStartTimestamp = 1600000000;
     let currentEndTimestamp = currentStartTimestamp + intervalTimestamp;
     const endTimestamp = Math.floor(Date.now() / 1000);

@@ -20,33 +20,35 @@ export class TransactionService {
     const response: TxChartElement[] = [];
 
     /* timestamp: genensis block */
-    let currentStartTimestamp = startTimestamp ? startTimestamp : 1438269973;
+    let currentStartTimestamp = 1600000000;
     let currentEndTimestamp = currentStartTimestamp + intervalTimestamp;
     const endTimestamp = Math.floor(Date.now() / 1000);
+
+    const query = this._transactionRepository
+      .createQueryBuilder("transaction")
+      .leftJoinAndSelect("transaction.protocol", "protocol")
+      .where("protocol.protocolAddress = :protocolAddress", {
+        protocolAddress,
+      });
+
+    const transactions: Transaction[] = await query.getMany();
 
     let transactionsCumulativeNum = 0;
 
     while (currentEndTimestamp <= endTimestamp) {
-      const query = this._transactionRepository
-        .createQueryBuilder("transaction")
-        .leftJoinAndSelect("transaction.protocol", "protocol")
-        .where("protocol.protocolAddress = :protocolAddress", {
-          protocolAddress,
-        })
-        .andWhere("transaction.timestamp >= :startTimestamp", {
-          startTimestamp: currentStartTimestamp,
-        })
-        .andWhere("transaction.timestamp < :endTimestamp", {
-          endTimestamp: currentEndTimestamp,
-        });
+      const activeTransactions: Transaction[] = [];
+      for (const transaction of transactions) {
+        if (transaction.timestamp >= currentStartTimestamp && transaction.timestamp <= currentEndTimestamp) {
+          activeTransactions.push(transaction);
+        }
+      }
 
-      const transactions: Transaction[] = await query.getMany();
-      transactionsCumulativeNum += transactions.length;
+      transactionsCumulativeNum += activeTransactions.length;
 
       response.push({
         startTimestamp: currentStartTimestamp,
         endTimestamp: currentEndTimestamp,
-        transactions,
+        transactions: activeTransactions,
         transactionsCumulativeNum,
       });
 
