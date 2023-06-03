@@ -7,6 +7,11 @@ import { GetBriefReq, GetBreifRes } from "./app.dtos";
 export class AppController {
   constructor(private readonly _appService: AppService, private readonly _etherscanApiService: EtherscanApiService) {}
 
+  @Get("isinit")
+  async checkIsInit(@Query("protocolAddress") protocolAddress: string) {
+    return true;
+  }
+
   @Post("sync")
   async syncTransactions(@Query("protocolAddress") protocolAddress: string) {
     return await this._etherscanApiService.syncTransactions(protocolAddress);
