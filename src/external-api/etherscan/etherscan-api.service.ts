@@ -33,6 +33,25 @@ export class EtherscanApiService {
     check();
   }
 
+  async getIsInit(protocolAddress: string): Promise<boolean> {
+    const lowerCasedProtocolAddress = protocolAddress.toLowerCase();
+    let result = false;
+
+    // protocol address가 존재하는지 확인
+    const protocol = await this.protocolRepository.findOne({ where: { protocolAddress: lowerCasedProtocolAddress } });
+    if (protocol !== null) {
+      // tx 가 존재하는지 확인
+      const txs = await await this.transactionRepository.find({
+        where: { protocolId: protocol.id },
+      });
+      if (txs !== null && txs.length > 0) {
+        result = true;
+      }
+    }
+
+    return result;
+  }
+
   private async _createTransaction(transactionDto: TransactionDto): Promise<boolean> {
     const { from: walletAddress, to: protocolAddress, timeStamp, value, hash, blockNumber } = transactionDto;
     try {
