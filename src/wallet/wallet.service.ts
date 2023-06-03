@@ -3,64 +3,72 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { LessThan, Repository } from "typeorm";
 import { Wallet } from "../common/database/entities/wallet.entity";
 import { Transaction } from "../common/database/entities/transaction.entity";
-import { ChartElement } from "./wallet.dtos";
+import { Chart, ChartElement, GetChartDto } from "./wallet.dtos";
 import { NewData } from "src/app.dtos";
 
 @Injectable()
 export class WalletService {
   constructor(
-    @InjectRepository(Transaction)
-    private _transactionRepository: Repository<Transaction>,
     @InjectRepository(Wallet)
     private _walletRepository: Repository<Wallet>,
   ) {}
 
-  async getChart(protocolAddress: string, intervalTimestamp: number, startTimestamp?: number): Promise<ChartElement[]> {
+  async getAllChart(protocolAddress: string, intervalTimestamps: number[]): Promise<GetChartDto> {
+    const query = this._walletRepository
+      .createQueryBuilder("wallet")
+      .leftJoinAndSelect("wallet.transactions", "transaction")
+      .leftJoinAndSelect("transaction.protocol", "protocol")
+      .where("protocol.protocolAddress = :protocolAddress", {
+        protocolAddress,
+      });
+
+    const wallets: Wallet[] = await query.getMany();
+    const charts: Chart[] = [];
+
+    for (const intervalTimestamp of intervalTimestamps) {
+      charts.push(this._getChart(wallets, intervalTimestamp));
+    }
+
+    return { charts, totalDatasNum: wallets.length };
+  }
+
+  private _getChart(wallets: Wallet[], intervalTimestamp: number): ChartElement[] {
     const response: ChartElement[] = [];
 
     /* timestamp: genensis block */
-    let currentStartTimestamp = startTimestamp ? startTimestamp : 1438269973;
+    let currentStartTimestamp = 1600000000;
     let currentEndTimestamp = currentStartTimestamp + intervalTimestamp;
     const endTimestamp = Math.floor(Date.now() / 1000);
 
     while (currentEndTimestamp <= endTimestamp) {
-      const query = this._walletRepository
-        .createQueryBuilder("wallet")
-        .leftJoinAndSelect("wallet.transactions", "transaction")
-        .leftJoinAndSelect("transaction.protocol", "protocol")
-        .where("protocol.protocolAddress = :protocolAddress", {
-          protocolAddress,
-        })
-        .andWhere("transaction.timestamp >= :startTimestamp", {
-          startTimestamp: currentStartTimestamp,
-        })
-        .andWhere("transaction.timestamp < :endTimestamp", {
-          endTimestamp: currentEndTimestamp,
-        });
-
-      const wallets: Wallet[] = await query.getMany();
-
+      const activeWallets: Wallet[] = [];
       const newWallets: Wallet[] = [];
       let newWalletCumulativeNum = response.length ? response[response.length - 1].newWalletCumulativeNum : 0;
 
       for (const wallet of wallets) {
-        const hasPreviousTransaction = await this._transactionRepository.findOne({
-          where: {
-            walletId: wallet.id,
-            timestamp: LessThan(currentStartTimestamp),
-          },
-        });
+        const hasTransactionsInPeriod = wallet.transactions.some(
+          (transaction) =>
+            transaction.timestamp >= currentStartTimestamp && transaction.timestamp <= currentEndTimestamp,
+        );
 
-        if (!hasPreviousTransaction) {
-          newWallets.push(wallet);
-          newWalletCumulativeNum++;
+        if (hasTransactionsInPeriod) {
+          activeWallets.push(wallet);
+
+          const hasPreviousTransaction = wallet.transactions.some(
+            (transaction) => transaction.timestamp < currentStartTimestamp,
+          );
+
+          if (!hasPreviousTransaction) {
+            newWallets.push(wallet);
+            newWalletCumulativeNum++;
+          }
         }
       }
 
       response.push({
         startTimestamp: currentStartTimestamp,
         endTimestamp: currentEndTimestamp,
-        wallets,
+        wallets: activeWallets,
         newWallets,
         newWalletCumulativeNum,
       });

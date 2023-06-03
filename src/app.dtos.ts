@@ -22,10 +22,12 @@ export class GetBriefRes {
     newDatasMonthChart: NewDataChartElement[];
   };
   newDatasList: NewData[]; // currenty 20 (tmp)
-  totalDatasNum: number;
-  activatedDailyDatasNum: number;
-  activatedWeekDatasNum: number;
-  activatedMonthlyDatasNum: number;
+  datasNum: {
+    totalDatasNum: number;
+    activatedDailyDatasNum: number;
+    activatedWeekDatasNum: number;
+    activatedMonthlyDatasNum: number;
+  };
 }
 
 export class StartTimestamps {
