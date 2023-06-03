@@ -9,8 +9,6 @@ export class AppController {
 
   @Get("isinit")
   async checkIsInit(@Query("protocolAddress") protocolAddress: string): Promise<boolean> {
-    console.log("checkIsInit", protocolAddress);
-
     return await this._etherscanApiService.getIsInit(protocolAddress);
   }
 

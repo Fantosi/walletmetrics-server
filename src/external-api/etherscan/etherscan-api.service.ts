@@ -53,7 +53,15 @@ export class EtherscanApiService {
   }
 
   private async _createTransaction(transactionDto: TransactionDto): Promise<boolean> {
-    const { from: walletAddress, to: protocolAddress, timeStamp, value, hash, blockNumber } = transactionDto;
+    const {
+      from: walletAddress,
+      to: protocolAddress,
+      timeStamp,
+      value,
+      hash,
+      blockNumber,
+      functionName,
+    } = transactionDto;
     try {
       let wallet = await this.walletRepository.findOne({ where: { walletAddress } });
       if (wallet == null) {
@@ -79,6 +87,11 @@ export class EtherscanApiService {
 
       const transaction = await this.transactionRepository.findOne({ where: { hash } });
 
+      // functionName에서 ()찾아서 앞에 있는 문자열을 eventName으로 저장
+      let eventName = functionName;
+      const functionNameIndex = functionName.indexOf("(");
+      if (functionNameIndex !== -1) eventName = functionName.substring(0, functionNameIndex);
+
       if (transaction == null) {
         await this.transactionRepository.save({
           wallet,
@@ -87,7 +100,7 @@ export class EtherscanApiService {
           hash,
           walletId: wallet.id,
           protocolId: protocol.id,
-          eventName: "",
+          eventName,
           totalValue: 0,
           coinValue: 0,
           tokenValue: 0,
