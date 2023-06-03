@@ -229,10 +229,13 @@ export class EtherscanApiService {
           for (const tx of data.result) {
             await this.createTransaction(tx);
           }
-        }
 
-        if (data.result.length < 500) {
-          break;
+          /* end loop */
+          if (data.result.length < 500) {
+            break;
+          }
+        } else {
+          throw Error(`Etherscan API Error: status code: ${data.status}`);
         }
 
         page++;
