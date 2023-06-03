@@ -8,7 +8,7 @@ export class AppController {
   constructor(private readonly _appService: AppService, private readonly _etherscanApiService: EtherscanApiService) {}
 
   @Get("isinit")
-  async checkIsInit(@Query("protocolAddress") protocolAddress: string) {
+  async checkIsInit(@Query("protocolAddress") protocolAddress: string): Promise<boolean> {
     return true;
   }
 
