@@ -20,7 +20,9 @@ export class GetBreifRes {
     week: number;
     month: number;
   };
-  newDatasChart: NewDataTimestamp[];
+  newDatasDayChart: NewDataTimestamp[];
+  newDatasWeekChart: NewDataTimestamp[];
+  newDatasMonthChart: NewDataTimestamp[];
   newDatasList: NewData[]; // currenty 20 (tmp)
   totalDatasNum: number;
   activatedDailyDatasNum: number;
