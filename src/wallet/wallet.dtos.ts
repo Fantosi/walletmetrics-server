@@ -5,4 +5,5 @@ export class ChartElement {
   endTimestamp: number;
   wallets: Wallet[];
   newWallets: Wallet[];
+  newWalletCumulativeNum: number;
 }

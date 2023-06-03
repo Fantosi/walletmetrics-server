@@ -1,20 +1,16 @@
-export class GetBriefReq {
-  protocolAddress: string;
-  timeStampInterval: string;
-}
-
 export class NewWalletChartElement {
   startDate: Date;
   endDate: Date;
   newWalletNum: number;
+  newWalletCumulativeNum: number;
 }
 
 export class NewData {
   address: string;
-  timestamp: string; // Date
+  timestamp: Date; // Date
 }
 
-export class GetBreifRes {
+export class GetBriefRes {
   newDatasHistory: {
     day: number;
     week: number;
@@ -36,6 +32,6 @@ export class StartTimestamps {
   startTimestampsMonth: number;
 }
 
-export const DAY_TIMESTAMP = 24 * 60 * 60 * 1000;
+export const DAY_TIMESTAMP = 86400;
 export const WEEK_TIMESTAMP = 7 * DAY_TIMESTAMP;
 export const MONTH_TIMESTAMP = 30 * DAY_TIMESTAMP;

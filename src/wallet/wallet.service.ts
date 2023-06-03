@@ -4,6 +4,7 @@ import { LessThan, Repository } from "typeorm";
 import { Wallet } from "../common/database/entities/wallet.entity";
 import { Transaction } from "../common/database/entities/transaction.entity";
 import { ChartElement } from "./wallet.dtos";
+import { NewData } from "src/app.dtos";
 
 @Injectable()
 export class WalletService {
@@ -14,28 +15,18 @@ export class WalletService {
     private _walletRepository: Repository<Wallet>,
   ) {}
 
-  async getWalletByTransactionId(transactionId: number): Promise<Wallet> {
-    /* 현재 interval에 해당하는 transaction이면 wallets에 추가 */
-    const wallet = await this._walletRepository
-      .createQueryBuilder("wallet")
-      .leftJoinAndSelect("wallet.transaction", "transaction")
-      .where("transaction.id = :transactionId", { transactionId })
-      .getOne();
-
-    return wallet;
-  }
-
   async getChart(intervalTimestamp: number, startTimestamp?: number): Promise<ChartElement[]> {
     const response: ChartElement[] = [];
 
     /* timestamp: genensis block */
     let currentStartTimestamp = startTimestamp ? startTimestamp : 1438269973;
-    let currentEndTimestamp = intervalTimestamp;
+    let currentEndTimestamp = currentStartTimestamp + intervalTimestamp;
+    const endTimestamp = Math.floor(Date.now() / 1000);
 
-    while (currentEndTimestamp <= Date.now()) {
+    while (currentEndTimestamp <= endTimestamp) {
       const query = this._walletRepository
         .createQueryBuilder("wallet")
-        .innerJoinAndSelect("wallet.transaction", "transaction")
+        .leftJoinAndSelect("wallet.transactions", "transaction")
         .where("transaction.timestamp >= :startTimestamp", {
           startTimestamp: currentStartTimestamp,
         })
@@ -46,6 +37,8 @@ export class WalletService {
       const wallets: Wallet[] = await query.getMany();
 
       const newWallets: Wallet[] = [];
+      let newWalletCumulativeNum = response.length ? response[response.length - 1].newWalletCumulativeNum : 0;
+
       for (const wallet of wallets) {
         const hasPreviousTransaction = await this._transactionRepository.findOne({
           where: {
@@ -56,6 +49,7 @@ export class WalletService {
 
         if (!hasPreviousTransaction) {
           newWallets.push(wallet);
+          newWalletCumulativeNum++;
         }
       }
 
@@ -64,6 +58,7 @@ export class WalletService {
         endTimestamp: currentEndTimestamp,
         wallets,
         newWallets,
+        newWalletCumulativeNum,
       });
 
       currentStartTimestamp = currentEndTimestamp;
@@ -78,11 +73,33 @@ export class WalletService {
     indexStartTimestamp: number,
     indexEndTimestamp: number,
   ): ChartElement[] {
-    const startIndex = chart.findIndex((data) => data.startTimestamp >= indexStartTimestamp);
-    const endIndex = chart.findIndex((data) => data.endTimestamp <= indexEndTimestamp);
-
-    const slicedWalletsByIndex = chart.slice(startIndex, endIndex);
+    const slicedWalletsByIndex = chart.filter(
+      (data) => data.startTimestamp >= indexStartTimestamp && data.endTimestamp <= indexEndTimestamp,
+    );
     return slicedWalletsByIndex;
+  }
+
+  getNewWallet(chart: ChartElement[], num: number) {
+    const newWallet = [];
+    let cnt = num,
+      currentIndex = chart.length - 1;
+
+    while (cnt > 0 && currentIndex >= 0) {
+      for (const wallet of chart[currentIndex].newWallets) {
+        newWallet.push({
+          address: wallet.walletAddress,
+          timestamp: new Date(wallet.transactions[wallet.transactions.length - 1].timestamp * 1000),
+        });
+
+        if (--cnt === 0) {
+          break;
+        }
+      }
+
+      currentIndex--;
+    }
+
+    return newWallet;
   }
 
   getWalletGrowthRate(chart: ChartElement[], indexStartTimestamp: number, indexEndTimestamp: number): number {
@@ -90,8 +107,8 @@ export class WalletService {
 
     const firstInterval = lastChart[0];
     const lastInterval = lastChart[lastChart.length - 1];
-    const initialCount = firstInterval.newWallets.length;
-    const finalCount = lastInterval.newWallets.length;
+    const initialCount = firstInterval.newWalletCumulativeNum;
+    const finalCount = lastInterval.newWalletCumulativeNum;
 
     if (initialCount === 0) {
       return 0;

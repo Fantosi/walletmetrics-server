@@ -9,6 +9,9 @@ import postgresConfig from "./common/config/postgres.config";
 import { EtherscanApiModule } from "./external-api/etherscan/etherscan-api.module";
 import etherscanApiConfig from "./common/config/etherscan.api.config";
 import { WalletService } from "./wallet/wallet.service";
+import { Transaction } from "@common/database/entities/transaction.entity";
+import { Wallet } from "@common/database/entities/wallet.entity";
+import { Protocol } from "@common/database/entities/protocol.entity";
 
 @Module({
   imports: [
@@ -25,6 +28,7 @@ import { WalletService } from "./wallet/wallet.service";
     TypeOrmModule.forRoot({
       ...postgresConfig().postgres,
     }),
+    TypeOrmModule.forFeature([Transaction, Wallet, Protocol]),
     EtherscanApiModule,
   ],
   controllers: [AppController],
