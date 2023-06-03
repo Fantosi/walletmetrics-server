@@ -12,6 +12,8 @@ import { WalletService } from "./wallet/wallet.service";
 import { Transaction } from "@common/database/entities/transaction.entity";
 import { Wallet } from "@common/database/entities/wallet.entity";
 import { Protocol } from "@common/database/entities/protocol.entity";
+import { TransactionModule } from "./transaction/transaction.module";
+import { TransactionService } from "./transaction/transaction.service";
 
 @Module({
   imports: [
@@ -30,8 +32,9 @@ import { Protocol } from "@common/database/entities/protocol.entity";
     }),
     TypeOrmModule.forFeature([Transaction, Wallet, Protocol]),
     EtherscanApiModule,
+    TransactionModule,
   ],
   controllers: [AppController],
-  providers: [AppService, WalletService],
+  providers: [AppService, WalletService, TransactionService],
 })
 export class AppModule {}

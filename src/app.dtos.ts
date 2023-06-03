@@ -1,8 +1,8 @@
-export class NewWalletChartElement {
+export class NewDataChartElement {
   startDate: Date;
   endDate: Date;
-  newWalletNum: number;
-  newWalletCumulativeNum: number;
+  newDataNum: number;
+  newDataCumulativeNum: number;
 }
 
 export class NewData {
@@ -16,9 +16,9 @@ export class GetBriefRes {
     week: number;
     month: number;
   };
-  newDatasDayChart: NewWalletChartElement[];
-  newDatasWeekChart: NewWalletChartElement[];
-  newDatasMonthChart: NewWalletChartElement[];
+  newDatasDayChart: NewDataChartElement[];
+  newDatasWeekChart: NewDataChartElement[];
+  newDatasMonthChart: NewDataChartElement[];
   newDatasList: NewData[]; // currenty 20 (tmp)
   totalDatasNum: number;
   activatedDailyDatasNum: number;
