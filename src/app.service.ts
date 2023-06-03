@@ -11,25 +11,49 @@ export class AppService {
         week: 50,
         month: 200,
       },
-      newDatasChart: [
+      newDatasDayChart: [
         {
           startTimestamp: "2023-06-01T09:00:00.000Z",
-          endTimestamp: "2023-06-01T17:00:00.000Z",
+          endTimestamp: "2023-06-02T09:00:00.000Z",
           num: 100,
         },
         {
           startTimestamp: "2023-06-02T09:00:00.000Z",
-          endTimestamp: "2023-06-02T17:00:00.000Z",
+          endTimestamp: "2023-06-03T09:00:00.000Z",
+          num: 150,
+        },
+      ],
+      newDatasWeekChart: [
+        {
+          startTimestamp: "2023-06-01T09:00:00.000Z",
+          endTimestamp: "2023-06-08T09:00:00.000Z",
+          num: 100,
+        },
+        {
+          startTimestamp: "2023-06-08T09:00:00.000Z",
+          endTimestamp: "2023-06-15T09:00:00.000Z",
+          num: 150,
+        },
+      ],
+      newDatasMonthChart: [
+        {
+          startTimestamp: "2023-06-01T09:00:00.000Z",
+          endTimestamp: "2023-07-01T09:00:00.000Z",
+          num: 100,
+        },
+        {
+          startTimestamp: "2023-07-01T09:00:00.000Z",
+          endTimestamp: "2023-08-01T09:00:00.000Z",
           num: 150,
         },
       ],
       newDatasList: [
         {
-          address: "0x4950631e0D68A9E9E53b9466f50dCE161F88e42d",
+          address: "0x1234567890abcdef",
           timestamp: "2023-06-01T10:30:00.000Z",
         },
         {
-          address: "0x2DEA4f469E0C0A3cCA25606bBd684474830f0fDA",
+          address: "0x9876543210fedcba",
           timestamp: "2023-06-02T14:45:00.000Z",
         },
       ],
