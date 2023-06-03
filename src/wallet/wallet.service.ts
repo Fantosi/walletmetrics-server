@@ -3,7 +3,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { LessThan, Repository } from "typeorm";
 import { Wallet } from "../common/database/entities/wallet.entity";
 import { Transaction } from "../common/database/entities/transaction.entity";
-import { ChartElement } from "./wallet.dtos";
+import { Chart, ChartElement, GetChartDto } from "./wallet.dtos";
 import { NewData } from "src/app.dtos";
 
 @Injectable()
@@ -13,14 +13,7 @@ export class WalletService {
     private _walletRepository: Repository<Wallet>,
   ) {}
 
-  async getChart(protocolAddress: string, intervalTimestamp: number, startTimestamp?: number): Promise<ChartElement[]> {
-    const response: ChartElement[] = [];
-
-    /* timestamp: genensis block */
-    let currentStartTimestamp = 1600000000;
-    let currentEndTimestamp = currentStartTimestamp + intervalTimestamp;
-    const endTimestamp = Math.floor(Date.now() / 1000);
-
+  async getAllChart(protocolAddress: string, intervalTimestamps: number[]): Promise<GetChartDto> {
     const query = this._walletRepository
       .createQueryBuilder("wallet")
       .leftJoinAndSelect("wallet.transactions", "transaction")
@@ -30,6 +23,22 @@ export class WalletService {
       });
 
     const wallets: Wallet[] = await query.getMany();
+    const charts: Chart[] = [];
+
+    for (const intervalTimestamp of intervalTimestamps) {
+      charts.push(this._getChart(wallets, intervalTimestamp));
+    }
+
+    return { charts, totalDatasNum: wallets.length };
+  }
+
+  private _getChart(wallets: Wallet[], intervalTimestamp: number): ChartElement[] {
+    const response: ChartElement[] = [];
+
+    /* timestamp: genensis block */
+    let currentStartTimestamp = 1600000000;
+    let currentEndTimestamp = currentStartTimestamp + intervalTimestamp;
+    const endTimestamp = Math.floor(Date.now() / 1000);
 
     while (currentEndTimestamp <= endTimestamp) {
       const activeWallets: Wallet[] = [];

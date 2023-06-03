@@ -24,9 +24,13 @@ export class AppService {
     const loweredProtocolAddress = protocolAddress.toLowerCase();
 
     /* chart 가져오기 */
-    const dayWalletChart = await this._walletService.getChart(loweredProtocolAddress, DAY_TIMESTAMP);
-    const weekWalletChart = await this._walletService.getChart(loweredProtocolAddress, WEEK_TIMESTAMP);
-    const monthWalletChart = await this._walletService.getChart(loweredProtocolAddress, MONTH_TIMESTAMP);
+    const { charts, totalDatasNum } = await this._walletService.getAllChart(loweredProtocolAddress, [
+      DAY_TIMESTAMP,
+      WEEK_TIMESTAMP,
+      MONTH_TIMESTAMP,
+    ]);
+
+    const [dayWalletChart, weekWalletChart, monthWalletChart] = charts;
 
     const endTimestamp = dayWalletChart[dayWalletChart.length - 1].endTimestamp;
     const { startTimestampsDay, startTimestampsWeek, startTimestampsMonth } = this._getStartTimestamp(endTimestamp);
@@ -75,10 +79,12 @@ export class AppService {
         newDatasMonthChart: this._convertToNewWalletChartElementArray(monthWalletChart),
       },
       newDatasList: newWallets,
-      totalDatasNum: 250,
-      activatedDailyDatasNum: dayActiveWalletCount,
-      activatedWeekDatasNum: weekActiveWalletCount,
-      activatedMonthlyDatasNum: monthActiveWalletCount,
+      datasNum: {
+        totalDatasNum: totalDatasNum,
+        activatedDailyDatasNum: dayActiveWalletCount,
+        activatedWeekDatasNum: weekActiveWalletCount,
+        activatedMonthlyDatasNum: monthActiveWalletCount,
+      },
     };
 
     return response;
@@ -88,9 +94,13 @@ export class AppService {
     const loweredProtocolAddress = protocolAddress.toLowerCase();
 
     /* chart 가져오기 */
-    const dayTransactionChart = await this._transactionService.getTxChart(loweredProtocolAddress, DAY_TIMESTAMP);
-    const weekTransactionChart = await this._transactionService.getTxChart(loweredProtocolAddress, WEEK_TIMESTAMP);
-    const monthTransactionChart = await this._transactionService.getTxChart(loweredProtocolAddress, MONTH_TIMESTAMP);
+    const { charts, totalDatasNum } = await this._transactionService.getAllTxChart(loweredProtocolAddress, [
+      DAY_TIMESTAMP,
+      WEEK_TIMESTAMP,
+      MONTH_TIMESTAMP,
+    ]);
+
+    const [dayTransactionChart, weekTransactionChart, monthTransactionChart] = charts;
 
     const endTimestamp = dayTransactionChart[dayTransactionChart.length - 1].endTimestamp;
     const { startTimestampsDay, startTimestampsWeek, startTimestampsMonth } = this._getStartTimestamp(endTimestamp);
@@ -143,10 +153,12 @@ export class AppService {
         newDatasMonthChart: this._convertToNewTransactionChartElementArray(monthTransactionChart),
       },
       newDatasList: newTransactions,
-      totalDatasNum: 250,
-      activatedDailyDatasNum: dayActiveTransactionCount,
-      activatedWeekDatasNum: weekActiveTransactionCount,
-      activatedMonthlyDatasNum: monthActiveTransactionCount,
+      datasNum: {
+        totalDatasNum,
+        activatedDailyDatasNum: dayActiveTransactionCount,
+        activatedWeekDatasNum: weekActiveTransactionCount,
+        activatedMonthlyDatasNum: monthActiveTransactionCount,
+      },
     };
 
     return response;

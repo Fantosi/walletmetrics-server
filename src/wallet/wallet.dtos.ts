@@ -7,3 +7,10 @@ export class ChartElement {
   newWallets: Wallet[];
   newWalletCumulativeNum: number;
 }
+
+export type Chart = ChartElement[];
+
+export class GetChartDto {
+  charts: Chart[];
+  totalDatasNum: number;
+}

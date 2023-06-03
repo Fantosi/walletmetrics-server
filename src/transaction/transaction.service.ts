@@ -2,7 +2,7 @@ import { Transaction } from "@common/database/entities/transaction.entity";
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-import { TxChartElement } from "./transaction.dtos";
+import { GetTxChartDto, TxChart, TxChartElement } from "./transaction.dtos";
 import { NewData } from "src/app.dtos";
 
 @Injectable()
@@ -12,18 +12,7 @@ export class TransactionService {
     private _transactionRepository: Repository<Transaction>,
   ) {}
 
-  async getTxChart(
-    protocolAddress: string,
-    intervalTimestamp: number,
-    startTimestamp?: number,
-  ): Promise<TxChartElement[]> {
-    const response: TxChartElement[] = [];
-
-    /* timestamp: genensis block */
-    let currentStartTimestamp = 1600000000;
-    let currentEndTimestamp = currentStartTimestamp + intervalTimestamp;
-    const endTimestamp = Math.floor(Date.now() / 1000);
-
+  async getAllTxChart(protocolAddress: string, intervalTimestamps: number[]): Promise<GetTxChartDto> {
     const query = this._transactionRepository
       .createQueryBuilder("transaction")
       .leftJoinAndSelect("transaction.protocol", "protocol")
@@ -32,6 +21,22 @@ export class TransactionService {
       });
 
     const transactions: Transaction[] = await query.getMany();
+    const txCharts: TxChart[] = [];
+
+    for (const intervalTimestamp of intervalTimestamps) {
+      txCharts.push(this._getTxChart(transactions, intervalTimestamp));
+    }
+
+    return { charts: txCharts, totalDatasNum: transactions.length };
+  }
+
+  private _getTxChart(transactions: Transaction[], intervalTimestamp: number): TxChartElement[] {
+    const response: TxChartElement[] = [];
+
+    /* timestamp: genensis block */
+    let currentStartTimestamp = 1600000000;
+    let currentEndTimestamp = currentStartTimestamp + intervalTimestamp;
+    const endTimestamp = Math.floor(Date.now() / 1000);
 
     let transactionsCumulativeNum = 0;
 

@@ -6,3 +6,10 @@ export class TxChartElement {
   transactions: Transaction[];
   transactionsCumulativeNum: number;
 }
+
+export type TxChart = TxChartElement[];
+
+export class GetTxChartDto {
+  charts: TxChart[];
+  totalDatasNum: number;
+}
