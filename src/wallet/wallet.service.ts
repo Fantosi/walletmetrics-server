@@ -15,7 +15,7 @@ export class WalletService {
     private _walletRepository: Repository<Wallet>,
   ) {}
 
-  async getChart(intervalTimestamp: number, startTimestamp?: number): Promise<ChartElement[]> {
+  async getChart(protocolAddress: string, intervalTimestamp: number, startTimestamp?: number): Promise<ChartElement[]> {
     const response: ChartElement[] = [];
 
     /* timestamp: genensis block */
@@ -27,7 +27,11 @@ export class WalletService {
       const query = this._walletRepository
         .createQueryBuilder("wallet")
         .leftJoinAndSelect("wallet.transactions", "transaction")
-        .where("transaction.timestamp >= :startTimestamp", {
+        .leftJoinAndSelect("transaction.protocol", "protocol")
+        .where("protocol.protocolAddress = :protocolAddress", {
+          protocolAddress,
+        })
+        .andWhere("transaction.timestamp >= :startTimestamp", {
           startTimestamp: currentStartTimestamp,
         })
         .andWhere("transaction.timestamp < :endTimestamp", {

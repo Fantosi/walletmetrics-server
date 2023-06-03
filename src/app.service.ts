@@ -85,9 +85,9 @@ export class AppService {
 
   async getUserBrief(protocolAddress: string): Promise<GetBriefRes> {
     /* chart 가져오기 */
-    const dayWalletChart = await this._walletService.getChart(DAY_TIMESTAMP);
-    const weekWalletChart = await this._walletService.getChart(WEEK_TIMESTAMP);
-    const monthWalletChart = await this._walletService.getChart(MONTH_TIMESTAMP);
+    const dayWalletChart = await this._walletService.getChart(protocolAddress, DAY_TIMESTAMP);
+    const weekWalletChart = await this._walletService.getChart(protocolAddress, WEEK_TIMESTAMP);
+    const monthWalletChart = await this._walletService.getChart(protocolAddress, MONTH_TIMESTAMP);
 
     const endTimestamp = dayWalletChart[dayWalletChart.length - 1].endTimestamp;
     const { startTimestampsDay, startTimestampsWeek, startTimestampsMonth } = this._getStartTimestamp(endTimestamp);
