@@ -34,7 +34,7 @@ git clone https://github.com/Fantosi/walletmetrics-server.git
 
 ```bash
 cd walletmetrics
-npm install
+yarn start
 ```
 
 3. Set up the configuration file:
@@ -48,17 +48,8 @@ Edit the `.env` file and provide the necessary configurations.
 4. Start the application:
 
 ```bash
-npm start
+yarn start:local
 ```
-
-## Documentation
-
-For detailed instructions on how to use Walletmetrics and its API, please refer to the [Documentation](docs/README.md).
-
-
-## License
-
-This project is licensed under the [MIT License](LICENSE).
 
 ## Acknowledgements
 
