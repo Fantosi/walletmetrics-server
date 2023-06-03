@@ -1,6 +1,6 @@
-import { Protocol } from "@common/database/entities/protocol.entity";
-import { Transaction } from "@common/database/entities/transaction.entity";
-import { Wallet } from "@common/database/entities/wallet.entity";
+import { Protocol } from "../../common/database/entities/protocol.entity";
+import { Transaction } from "../../common/database/entities/transaction.entity";
+import { Wallet } from "../../common/database/entities/wallet.entity";
 import { DataSourceOptions } from "typeorm";
 
 export default () =>
