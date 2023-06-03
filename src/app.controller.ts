@@ -14,7 +14,7 @@ export class AppController {
   }
 
   @Post("sync")
-  async syncTransactions(@Query("protocolAddress") protocolAddress: string) {
+  async syncTransactions(@Query("protocolAddress") protocolAddress: string): Promise<boolean> {
     return await this._etherscanApiService.syncTransactions(protocolAddress);
   }
 

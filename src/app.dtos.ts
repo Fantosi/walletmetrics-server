@@ -3,10 +3,10 @@ export class GetBriefReq {
   timeStampInterval: string;
 }
 
-export class NewDataTimestamp {
-  startTimestamp: string; // Date
-  endTimestamp: string; // Date
-  num: number;
+export class NewWalletChartElement {
+  startDate: Date;
+  endDate: Date;
+  newWalletNum: number;
 }
 
 export class NewData {
@@ -20,12 +20,22 @@ export class GetBreifRes {
     week: number;
     month: number;
   };
-  newDatasDayChart: NewDataTimestamp[];
-  newDatasWeekChart: NewDataTimestamp[];
-  newDatasMonthChart: NewDataTimestamp[];
+  newDatasDayChart: NewWalletChartElement[];
+  newDatasWeekChart: NewWalletChartElement[];
+  newDatasMonthChart: NewWalletChartElement[];
   newDatasList: NewData[]; // currenty 20 (tmp)
   totalDatasNum: number;
   activatedDailyDatasNum: number;
   activatedWeekDatasNum: number;
   activatedMonthlyDatasNum: number;
 }
+
+export class StartTimestamps {
+  startTimestampsDay: number;
+  startTimestampsWeek: number;
+  startTimestampsMonth: number;
+}
+
+export const DAY_TIMESTAMP = 24 * 60 * 60 * 1000;
+export const WEEK_TIMESTAMP = 7 * DAY_TIMESTAMP;
+export const MONTH_TIMESTAMP = 30 * DAY_TIMESTAMP;
