@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { LessThan, Repository } from "typeorm";
 import { Wallet } from "../common/database/entities/wallet.entity";
 import { Transaction } from "../common/database/entities/transaction.entity";
 import { WalletsByTimestampInterval } from "./wallet.dtos";
@@ -25,107 +25,104 @@ export class WalletService {
     return wallet;
   }
 
-  async getWalletsByTimestampInterval(interval: number): Promise<WalletsByTimestampInterval[]> {
-    /* transaction을 오름차순으로 정렬 */
-    const transactions = await this._transactionRepository.find({ order: { timestamp: "ASC" } });
+  async getWalletsByInterval(
+    intervalTimestamp: number,
+    startTimestamp?: number,
+  ): Promise<WalletsByTimestampInterval[]> {
+    const response: WalletsByTimestampInterval[] = [];
 
-    const walletTimestamps: WalletsByTimestampInterval[] = [];
+    /* timestamp: genensis block */
+    let currentStartTimestamp = startTimestamp ? startTimestamp : 1438269973;
+    let currentEndTimestamp = intervalTimestamp;
 
-    let currentIntervalStart = transactions[0].timestamp;
-    let currentIntervalEnd = currentIntervalStart + interval;
-
-    let currentWallets: Wallet[] = [];
-
-    for (const transaction of transactions) {
-      if (transaction.timestamp >= currentIntervalStart && transaction.timestamp < currentIntervalEnd) {
-        /* 현재 interval에 해당하는 transaction이면 wallets에 추가 */
-        const wallet = await this.getWalletByTransactionId(transaction.id);
-
-        if (wallet) {
-          currentWallets.push(wallet);
-        }
-      } else {
-        /* 현재 interval이 끝났으므로 결과에 추가하고 다음 interval로 넘어감 */
-        walletTimestamps.push({
-          startTimestamp: currentIntervalStart,
-          endTimestamp: currentIntervalEnd,
-          wallet: currentWallets,
+    while (currentEndTimestamp <= Date.now()) {
+      const query = this._walletRepository
+        .createQueryBuilder("wallet")
+        .innerJoinAndSelect("wallet.transaction", "transaction")
+        .where("transaction.timestamp >= :startTimestamp", {
+          startTimestamp: currentStartTimestamp,
+        })
+        .andWhere("transaction.timestamp < :endTimestamp", {
+          endTimestamp: currentEndTimestamp,
         });
 
-        currentIntervalStart = currentIntervalEnd;
-        currentIntervalEnd = currentIntervalStart + interval;
+      const wallets: Wallet[] = await query.getMany();
 
-        currentWallets = [];
+      const newWallets: Wallet[] = [];
+      for (const wallet of wallets) {
+        const hasPreviousTransaction = await this._transactionRepository.findOne({
+          where: {
+            walletId: wallet.id,
+            timestamp: LessThan(currentStartTimestamp),
+          },
+        });
 
-        /* 현재 interval에 해당하는 transaction도 현재 wallets에 추가 */
-        const wallet = await this.getWalletByTransactionId(transaction.id);
-
-        if (wallet) {
-          currentWallets.push(wallet);
+        if (!hasPreviousTransaction) {
+          newWallets.push(wallet);
         }
       }
+
+      response.push({
+        startTimestamp: currentStartTimestamp,
+        endTimestamp: currentEndTimestamp,
+        wallets,
+        newWallets,
+      });
+
+      currentStartTimestamp = currentEndTimestamp;
+      currentEndTimestamp += intervalTimestamp;
     }
 
-    /* 마지막 interval 결과 추가 */
-    walletTimestamps.push({
-      startTimestamp: currentIntervalStart,
-      endTimestamp: currentIntervalEnd,
-      wallet: currentWallets,
-    });
-
-    return walletTimestamps;
+    return response;
   }
 
-  async getDailyWalletCounts(): Promise<{ date: string; count: number }[]> {
-    const interval = 24 * 60 * 60 * 1000; // 1일을 밀리초로 표현
-    const walletsByInterval = await this.getWalletsByTimestampInterval(interval);
+  async getNewWalletGrowthRate(intervalTimestamp: number): Promise<number[]> {
+    const endTimestamp = Date.now();
+    const startTimestamp1Day = endTimestamp - intervalTimestamp * 24 * 60 * 60 * 1000; // 1일 전
+    const startTimestamp7Days = endTimestamp - intervalTimestamp * 7 * 24 * 60 * 60 * 1000; // 7일 전
+    const startTimestamp30Days = endTimestamp - intervalTimestamp * 30 * 24 * 60 * 60 * 1000; // 30일 전
 
-    const dailyCounts: { date: string; count: number }[] = [];
+    const newWallets1Day = await this.getWalletsByInterval(intervalTimestamp, startTimestamp1Day);
+    const newWallets7Days = await this.getWalletsByInterval(intervalTimestamp, startTimestamp7Days);
+    const newWallets30Days = await this.getWalletsByInterval(intervalTimestamp, startTimestamp30Days);
 
-    for (const wallets of walletsByInterval) {
-      const startDate = new Date(wallets.startTimestamp).toISOString().split("T")[0];
-      const endDate = new Date(wallets.endTimestamp).toISOString().split("T")[0];
-      const count = wallets.wallet.length;
+    const growthRate1Day = this.calculateGrowthRate(newWallets1Day);
+    const growthRate7Days = this.calculateGrowthRate(newWallets7Days);
+    const growthRate30Days = this.calculateGrowthRate(newWallets30Days);
 
-      dailyCounts.push({ date: startDate, count });
-    }
-
-    return dailyCounts;
+    return [growthRate1Day, growthRate7Days, growthRate30Days];
   }
 
-  async getWeeklyWalletCounts(): Promise<{ startDate: string; endDate: string; count: number }[]> {
-    const interval = 7 * 24 * 60 * 60 * 1000; // 1주일을 밀리초로 표현
-    const walletsByInterval = await this.getWalletsByTimestampInterval(interval);
+  async getCurrentActiveWalletsCount(): Promise<number[]> {
+    const endTimestamp = Date.now();
+    const startTimestampToday = new Date().setHours(0, 0, 0, 0); // 오늘 자정
+    const startTimestampThisWeek = endTimestamp - 7 * 24 * 60 * 60 * 1000; // 이번 주 첫날 자정
+    const startTimestampThisMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime(); // 이번 달 1일 자정
 
-    const weeklyCounts: { startDate: string; endDate: string; count: number }[] = [];
+    const walletsToday = await this.getWalletsByInterval(startTimestampToday, endTimestamp);
+    const walletsThisWeek = await this.getWalletsByInterval(startTimestampThisWeek, endTimestamp);
+    const walletsThisMonth = await this.getWalletsByInterval(startTimestampThisMonth, endTimestamp);
 
-    for (const wallets of walletsByInterval) {
-      const startDate = new Date(wallets.startTimestamp).toISOString().split("T")[0];
-      const endDate = new Date(wallets.endTimestamp).toISOString().split("T")[0];
-      const count = wallets.wallet.length;
+    const countToday = walletsToday.reduce((count, walletsInterval) => count + walletsInterval.wallets.length, 0);
+    const countThisWeek = walletsThisWeek.reduce((count, walletsInterval) => count + walletsInterval.wallets.length, 0);
+    const countThisMonth = walletsThisMonth.reduce(
+      (count, walletsInterval) => count + walletsInterval.wallets.length,
+      0,
+    );
 
-      weeklyCounts.push({ startDate, endDate, count });
-    }
-
-    return weeklyCounts;
+    return [countToday, countThisWeek, countThisMonth];
   }
 
-  async getMonthlyWalletCounts(): Promise<{ year: number; month: number; count: number }[]> {
-    const interval = 30 * 24 * 60 * 60 * 1000; // 30일을 밀리초로 표현
-    const walletsByInterval = await this.getWalletsByTimestampInterval(interval);
+  private calculateGrowthRate(walletsIntervals: WalletsByTimestampInterval[]): number {
+    const firstInterval = walletsIntervals[0];
+    const lastInterval = walletsIntervals[walletsIntervals.length - 1];
+    const initialCount = firstInterval.newWallets.length;
+    const finalCount = lastInterval.newWallets.length;
 
-    const monthlyCounts: { year: number; month: number; count: number }[] = [];
-
-    for (const wallets of walletsByInterval) {
-      const startDate = new Date(wallets.startTimestamp);
-      const endDate = new Date(wallets.endTimestamp);
-      const year = startDate.getFullYear();
-      const month = startDate.getMonth() + 1;
-      const count = wallets.wallet.length;
-
-      monthlyCounts.push({ year, month, count });
+    if (initialCount === 0) {
+      return 0;
     }
 
-    return monthlyCounts;
+    return ((finalCount - initialCount) / initialCount) * 100;
   }
 }
