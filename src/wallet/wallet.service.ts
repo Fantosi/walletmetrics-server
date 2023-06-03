@@ -9,8 +9,6 @@ import { NewData } from "src/app.dtos";
 @Injectable()
 export class WalletService {
   constructor(
-    @InjectRepository(Transaction)
-    private _transactionRepository: Repository<Transaction>,
     @InjectRepository(Wallet)
     private _walletRepository: Repository<Wallet>,
   ) {}
@@ -19,48 +17,50 @@ export class WalletService {
     const response: ChartElement[] = [];
 
     /* timestamp: genensis block */
-    let currentStartTimestamp = startTimestamp ? startTimestamp : 1438269973;
+    // let currentStartTimestamp = startTimestamp ? startTimestamp : 1438269973;
+    let currentStartTimestamp = 1600000000;
     let currentEndTimestamp = currentStartTimestamp + intervalTimestamp;
     const endTimestamp = Math.floor(Date.now() / 1000);
 
+    const query = this._walletRepository
+      .createQueryBuilder("wallet")
+      .leftJoinAndSelect("wallet.transactions", "transaction")
+      .leftJoinAndSelect("transaction.protocol", "protocol")
+      .where("protocol.protocolAddress = :protocolAddress", {
+        protocolAddress,
+      });
+
+    const wallets: Wallet[] = await query.getMany();
+
     while (currentEndTimestamp <= endTimestamp) {
-      const query = this._walletRepository
-        .createQueryBuilder("wallet")
-        .leftJoinAndSelect("wallet.transactions", "transaction")
-        .leftJoinAndSelect("transaction.protocol", "protocol")
-        .where("protocol.protocolAddress = :protocolAddress", {
-          protocolAddress,
-        })
-        .andWhere("transaction.timestamp >= :startTimestamp", {
-          startTimestamp: currentStartTimestamp,
-        })
-        .andWhere("transaction.timestamp < :endTimestamp", {
-          endTimestamp: currentEndTimestamp,
-        });
-
-      const wallets: Wallet[] = await query.getMany();
-
+      const activeWallets: Wallet[] = [];
       const newWallets: Wallet[] = [];
       let newWalletCumulativeNum = response.length ? response[response.length - 1].newWalletCumulativeNum : 0;
 
       for (const wallet of wallets) {
-        const hasPreviousTransaction = await this._transactionRepository.findOne({
-          where: {
-            walletId: wallet.id,
-            timestamp: LessThan(currentStartTimestamp),
-          },
-        });
+        const hasTransactionsInPeriod = wallet.transactions.some(
+          (transaction) =>
+            transaction.timestamp >= currentStartTimestamp && transaction.timestamp <= currentEndTimestamp,
+        );
 
-        if (!hasPreviousTransaction) {
-          newWallets.push(wallet);
-          newWalletCumulativeNum++;
+        if (hasTransactionsInPeriod) {
+          activeWallets.push(wallet);
+
+          const hasPreviousTransaction = wallet.transactions.some(
+            (transaction) => transaction.timestamp < currentStartTimestamp,
+          );
+
+          if (!hasPreviousTransaction) {
+            newWallets.push(wallet);
+            newWalletCumulativeNum++;
+          }
         }
       }
 
       response.push({
         startTimestamp: currentStartTimestamp,
         endTimestamp: currentEndTimestamp,
-        wallets,
+        wallets: activeWallets,
         newWallets,
         newWalletCumulativeNum,
       });

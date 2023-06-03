@@ -5,7 +5,7 @@ import { Wallet } from "../common/database/entities/wallet.entity";
 import { Transaction } from "../common/database/entities/transaction.entity";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Transaction, Wallet])],
+  imports: [TypeOrmModule.forFeature([Wallet])],
   providers: [WalletService],
 })
 export class WalletModule {}
