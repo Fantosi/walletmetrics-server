@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, Header, Post, Query } from "@nestjs/common";
 import { AppService } from "./app.service";
 import { EtherscanApiService } from "./external-api/etherscan/etherscan-api.service";
 import { GetBriefReq, GetBreifRes } from "./app.dtos";
@@ -10,6 +10,7 @@ export class AppController {
   @Get("isinit")
   async checkIsInit(@Query("protocolAddress") protocolAddress: string): Promise<boolean> {
     console.log("checkIsInit", protocolAddress);
+
     return await this._etherscanApiService.getIsInit(protocolAddress);
   }
 
