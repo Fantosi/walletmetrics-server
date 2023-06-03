@@ -9,7 +9,6 @@ import { Wallet } from "../../common/database/entities/wallet.entity";
 import { Protocol } from "../../common/database/entities/protocol.entity";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-import { ethers } from "ethers";
 
 @Injectable()
 export class EtherscanApiService {
@@ -196,12 +195,19 @@ export class EtherscanApiService {
       }
 
       const protocol = await this.protocolRepository.findOne({ where: { protocolAddress: lowerCasedProtocolAddress } });
-      const protocolId = protocol.id;
-      const transactions = await this.transactionRepository.find({
-        where: { protocolId },
-        order: { blockNumber: "DESC" },
-      });
-      const savedLastBlockNumber = transactions[0].blockNumber + 1;
+
+      let savedLastBlockNumber: number;
+      if (protocol) {
+        const protocolId = protocol.id;
+        const transactions = await this.transactionRepository.find({
+          where: { protocolId },
+          order: { blockNumber: "DESC" },
+        });
+        savedLastBlockNumber = transactions[0].blockNumber + 1;
+      } else {
+        /* TODO: etherscan API에서 protocolAddress로 콜을 날려서 startBlock을 가져오도록 수정 */
+        savedLastBlockNumber = 0;
+      }
 
       let page = 1;
       while (true) {

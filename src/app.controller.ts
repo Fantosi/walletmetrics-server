@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from "@nestjs/common";
+import { Controller, Get, Post, Query } from "@nestjs/common";
 import { AppService } from "./app.service";
 import { EtherscanApiService } from "./external-api/etherscan/etherscan-api.service";
 
@@ -11,7 +11,7 @@ export class AppController {
     return this.appService.getHello();
   }
 
-  @Get("sync")
+  @Post("sync")
   async syncTransactions(@Query("protocolAddress") protocolAddress: string) {
     return await this.etherscanApiService.syncTransactions(protocolAddress);
   }
