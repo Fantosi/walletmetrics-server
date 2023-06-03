@@ -3,7 +3,8 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { LessThan, Repository } from "typeorm";
 import { Wallet } from "../common/database/entities/wallet.entity";
 import { Transaction } from "../common/database/entities/transaction.entity";
-import { WalletsByTimestampInterval } from "./wallet.dtos";
+import { ChartElement } from "./wallet.dtos";
+import { NewData } from "src/app.dtos";
 
 @Injectable()
 export class WalletService {
@@ -14,31 +15,18 @@ export class WalletService {
     private _walletRepository: Repository<Wallet>,
   ) {}
 
-  async getWalletByTransactionId(transactionId: number): Promise<Wallet> {
-    /* 현재 interval에 해당하는 transaction이면 wallets에 추가 */
-    const wallet = await this._walletRepository
-      .createQueryBuilder("wallet")
-      .leftJoinAndSelect("wallet.transaction", "transaction")
-      .where("transaction.id = :transactionId", { transactionId })
-      .getOne();
-
-    return wallet;
-  }
-
-  async getWalletsByInterval(
-    intervalTimestamp: number,
-    startTimestamp?: number,
-  ): Promise<WalletsByTimestampInterval[]> {
-    const response: WalletsByTimestampInterval[] = [];
+  async getChart(intervalTimestamp: number, startTimestamp?: number): Promise<ChartElement[]> {
+    const response: ChartElement[] = [];
 
     /* timestamp: genensis block */
     let currentStartTimestamp = startTimestamp ? startTimestamp : 1438269973;
-    let currentEndTimestamp = intervalTimestamp;
+    let currentEndTimestamp = currentStartTimestamp + intervalTimestamp;
+    const endTimestamp = Math.floor(Date.now() / 1000);
 
-    while (currentEndTimestamp <= Date.now()) {
+    while (currentEndTimestamp <= endTimestamp) {
       const query = this._walletRepository
         .createQueryBuilder("wallet")
-        .innerJoinAndSelect("wallet.transaction", "transaction")
+        .leftJoinAndSelect("wallet.transactions", "transaction")
         .where("transaction.timestamp >= :startTimestamp", {
           startTimestamp: currentStartTimestamp,
         })
@@ -49,6 +37,8 @@ export class WalletService {
       const wallets: Wallet[] = await query.getMany();
 
       const newWallets: Wallet[] = [];
+      let newWalletCumulativeNum = response.length ? response[response.length - 1].newWalletCumulativeNum : 0;
+
       for (const wallet of wallets) {
         const hasPreviousTransaction = await this._transactionRepository.findOne({
           where: {
@@ -59,6 +49,7 @@ export class WalletService {
 
         if (!hasPreviousTransaction) {
           newWallets.push(wallet);
+          newWalletCumulativeNum++;
         }
       }
 
@@ -67,6 +58,7 @@ export class WalletService {
         endTimestamp: currentEndTimestamp,
         wallets,
         newWallets,
+        newWalletCumulativeNum,
       });
 
       currentStartTimestamp = currentEndTimestamp;
@@ -76,53 +68,59 @@ export class WalletService {
     return response;
   }
 
-  async getNewWalletGrowthRate(intervalTimestamp: number): Promise<number[]> {
-    const endTimestamp = Date.now();
-    const startTimestamp1Day = endTimestamp - intervalTimestamp * 24 * 60 * 60 * 1000; // 1일 전
-    const startTimestamp7Days = endTimestamp - intervalTimestamp * 7 * 24 * 60 * 60 * 1000; // 7일 전
-    const startTimestamp30Days = endTimestamp - intervalTimestamp * 30 * 24 * 60 * 60 * 1000; // 30일 전
-
-    const newWallets1Day = await this.getWalletsByInterval(intervalTimestamp, startTimestamp1Day);
-    const newWallets7Days = await this.getWalletsByInterval(intervalTimestamp, startTimestamp7Days);
-    const newWallets30Days = await this.getWalletsByInterval(intervalTimestamp, startTimestamp30Days);
-
-    const growthRate1Day = this.calculateGrowthRate(newWallets1Day);
-    const growthRate7Days = this.calculateGrowthRate(newWallets7Days);
-    const growthRate30Days = this.calculateGrowthRate(newWallets30Days);
-
-    return [growthRate1Day, growthRate7Days, growthRate30Days];
-  }
-
-  async getCurrentActiveWalletsCount(): Promise<number[]> {
-    const endTimestamp = Date.now();
-    const startTimestampToday = new Date().setHours(0, 0, 0, 0); // 오늘 자정
-    const startTimestampThisWeek = endTimestamp - 7 * 24 * 60 * 60 * 1000; // 이번 주 첫날 자정
-    const startTimestampThisMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime(); // 이번 달 1일 자정
-
-    const walletsToday = await this.getWalletsByInterval(startTimestampToday, endTimestamp);
-    const walletsThisWeek = await this.getWalletsByInterval(startTimestampThisWeek, endTimestamp);
-    const walletsThisMonth = await this.getWalletsByInterval(startTimestampThisMonth, endTimestamp);
-
-    const countToday = walletsToday.reduce((count, walletsInterval) => count + walletsInterval.wallets.length, 0);
-    const countThisWeek = walletsThisWeek.reduce((count, walletsInterval) => count + walletsInterval.wallets.length, 0);
-    const countThisMonth = walletsThisMonth.reduce(
-      (count, walletsInterval) => count + walletsInterval.wallets.length,
-      0,
+  private _sliceWalletsByIndex(
+    chart: ChartElement[],
+    indexStartTimestamp: number,
+    indexEndTimestamp: number,
+  ): ChartElement[] {
+    const slicedWalletsByIndex = chart.filter(
+      (data) => data.startTimestamp >= indexStartTimestamp && data.endTimestamp <= indexEndTimestamp,
     );
-
-    return [countToday, countThisWeek, countThisMonth];
+    return slicedWalletsByIndex;
   }
 
-  private calculateGrowthRate(walletsIntervals: WalletsByTimestampInterval[]): number {
-    const firstInterval = walletsIntervals[0];
-    const lastInterval = walletsIntervals[walletsIntervals.length - 1];
-    const initialCount = firstInterval.newWallets.length;
-    const finalCount = lastInterval.newWallets.length;
+  getNewWallet(chart: ChartElement[], num: number) {
+    const newWallet = [];
+    let cnt = num,
+      currentIndex = chart.length - 1;
+
+    while (cnt > 0 && currentIndex >= 0) {
+      for (const wallet of chart[currentIndex].newWallets) {
+        newWallet.push({
+          address: wallet.walletAddress,
+          timestamp: new Date(wallet.transactions[wallet.transactions.length - 1].timestamp * 1000),
+        });
+
+        if (--cnt === 0) {
+          break;
+        }
+      }
+
+      currentIndex--;
+    }
+
+    return newWallet;
+  }
+
+  getWalletGrowthRate(chart: ChartElement[], indexStartTimestamp: number, indexEndTimestamp: number): number {
+    const lastChart = this._sliceWalletsByIndex(chart, indexStartTimestamp, indexEndTimestamp);
+
+    const firstInterval = lastChart[0];
+    const lastInterval = lastChart[lastChart.length - 1];
+    const initialCount = firstInterval.newWalletCumulativeNum;
+    const finalCount = lastInterval.newWalletCumulativeNum;
 
     if (initialCount === 0) {
       return 0;
     }
 
     return ((finalCount - initialCount) / initialCount) * 100;
+  }
+
+  getActiveWalletCount(chart: ChartElement[], indexStartTimestamp: number, indexEndTimestamp: number): number {
+    const lastChart = this._sliceWalletsByIndex(chart, indexStartTimestamp, indexEndTimestamp);
+
+    const count = lastChart.reduce((count, walletsInterval) => count + walletsInterval.wallets.length, 0);
+    return count;
   }
 }

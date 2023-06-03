@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Header, Post, Query } from "@nestjs/common";
 import { AppService } from "./app.service";
 import { EtherscanApiService } from "./external-api/etherscan/etherscan-api.service";
-import { GetBriefReq, GetBreifRes } from "./app.dtos";
+import { GetBriefRes } from "./app.dtos";
 
 @Controller()
 export class AppController {
@@ -13,17 +13,17 @@ export class AppController {
   }
 
   @Post("sync")
-  async syncTransactions(@Query("protocolAddress") protocolAddress: string) {
+  async syncTransactions(@Query("protocolAddress") protocolAddress: string): Promise<boolean> {
     return await this._etherscanApiService.syncTransactions(protocolAddress);
   }
 
-  @Get("userbreif")
-  async getUserBrief(@Body() userBreifReq: GetBriefReq): Promise<GetBreifRes> {
-    return await this._appService.getUserBrief(userBreifReq);
+  @Get("userbrief")
+  async getUserBrief(@Query("protocolAddress") protocolAddress: string): Promise<GetBriefRes> {
+    return await this._appService.getUserBrief(protocolAddress);
   }
 
   @Get("txbrief")
-  async getTxBrief(@Body() txBreifReq: GetBriefReq): Promise<GetBreifRes> {
-    return await this._appService.getTxBrief(txBreifReq);
+  async getTxBrief(@Query("protocolAddress") protocolAddress: string): Promise<GetBriefRes> {
+    return await this._appService.getTxBrief(protocolAddress);
   }
 }
