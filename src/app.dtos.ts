@@ -1,24 +1,26 @@
-export class NewWalletTimestamp {
-  startTimestamp: number;
-  endTimestamp: number;
-  walletNum: number;
+export class NewDataTimestamp {
+  startTimestamp: Date;
+  endTimestamp: Date;
+  num: number;
 }
 
-export class NewWallet {
-  walletAddress: string;
-  firstTxTimestamp: number;
+export class NewData {
+  address: string;
+  timestamp: Date;
 }
 
-export class UserBreifDto {
-  walletFlowHistory: {
+export class BreifDto {
+  newDatasHistory: {
     day: number;
     week: number;
     month: number;
   };
-  walletFlowChart: NewWalletTimestamp[];
-  newWalletsList: NewWallet[]; // currenty 20 (tmp)
-  totalWalletsNum: number;
-  activatedDailyWalletsNum: number;
-  activatedWeekWalletsNum: number;
-  activatedMonthlyWalletsNum: number;
+  newDatasChart: NewDataTimestamp[];
+  newDatasList: NewData[]; // currenty 20 (tmp)
+  totalDatasNum: number;
+  activatedDailyDatasNum: number;
+  activatedWeekDatasNum: number;
+  activatedMonthlyDatasNum: number;
 }
+
+export type GetBreifRes = BreifDto[];
