@@ -5,7 +5,7 @@ import { ConfigModule } from "@nestjs/config";
 import * as path from "path";
 import { ThrottlerModule } from "@nestjs/throttler";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import postgresConfig from "@common/config/postgres.config";
+import postgresConfig from "./common/config/postgres.config";
 import { EtherscanApiModule } from "./external-api/etherscan/etherscan-api.module";
 import etherscanApiConfig from "./common/config/etherscan.api.config";
 
