@@ -4,11 +4,11 @@ import { HttpService } from "@nestjs/axios";
 import { ConfigService } from "@nestjs/config";
 import { catchError, firstValueFrom } from "rxjs";
 import { AxiosError } from "axios";
-import { Transaction } from "@common/database/entities/transaction.entity";
+import { Transaction } from "../../common/database/entities/transaction.entity";
+import { Wallet } from "../../common/database/entities/wallet.entity";
+import { Protocol } from "../../common/database/entities/protocol.entity";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-import { Wallet } from "@common/database/entities/wallet.entity";
-import { Protocol } from "@common/database/entities/protocol.entity";
 import { ethers } from "ethers";
 
 @Injectable()
