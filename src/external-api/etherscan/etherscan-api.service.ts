@@ -12,8 +12,8 @@ import { Repository } from "typeorm";
 
 @Injectable()
 export class EtherscanApiService {
-  baseUrl = this.configService.get<string>("EtherscanApi.url");
-  apiKey = this.configService.get<string>("EtherscanApi.apiKey");
+  baseUrl = this.configService.get<string>("GnosisscanApi.url");
+  apiKey = this.configService.get<string>("GnosisscanApi.apiKey");
 
   constructor(
     private httpService: HttpService,
